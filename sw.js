@@ -1,17 +1,19 @@
-const CACHE_NAME = 'workout-tracker-v1';
+const CACHE_NAME = 'workout-tracker-v2';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/css/styles.css',
-  '/js/app.js',
-  '/js/data.js',
-  '/js/storage.js',
-  '/js/components/set-table.js',
-  '/js/views/home.js',
-  '/js/views/workout.js',
-  '/js/views/log-exercise.js',
-  '/manifest.json',
-  '/icons/icon-192.png'
+  './',
+  './index.html',
+  './css/styles.css',
+  './js/app.js',
+  './js/data.js',
+  './js/storage.js',
+  './js/components/set-table.js',
+  './js/components/data-modal.js',
+  './js/views/home.js',
+  './js/views/workout.js',
+  './js/views/log-exercise.js',
+  './js/views/history.js',
+  './manifest.json',
+  './icons/icon-192.png'
 ];
 
 self.addEventListener('install', (e) => {
