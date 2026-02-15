@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workout Tracker — Phase 3 Tests</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, sans-serif; background: #0a0a0a; color: #fff; padding: 20px; max-width: 700px; margin: 0 auto; }
+    h1 { margin-bottom: 16px; }
+    h2 { margin: 20px 0 8px; color: #8B5CF6; font-size: 16px; }
+    .pass { color: #22c55e; }
+    .fail { color: #ef4444; }
+    .result { padding: 4px 0; font-size: 14px; font-family: monospace; }
+    #summary { margin-top: 20px; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 16px; }
+    #summary.all-pass { background: rgba(34,197,94,0.15); color: #22c55e; }
+    #summary.has-fail { background: rgba(239,68,68,0.15); color: #ef4444; }
+  </style>
+</head>
+<body>
+  <h1>Phase 3 Tests</h1>
+  <div id="app" style="display:none"></div>
+  <div id="results"></div>
+  <div id="summary"></div>
+
+  <!-- Load app scripts in order -->
+  <script src="js/data.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/components/set-table.js"></script>
+  <script src="js/components/data-modal.js"></script>
+  <script src="js/components/progress-chart.js"></script>
+  <script src="js/views/home.js"></script>
+  <script src="js/views/workout.js"></script>
+  <script src="js/views/log-exercise.js"></script>
+  <script src="js/views/history.js"></script>
+  <script src="js/views/calendar.js"></script>
+  <script src="js/views/progress.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    const resultsEl = document.getElementById('results');
+    let passed = 0, failed = 0;
+
+    function assert(condition, label) {
+      if (condition) {
+        passed++;
+        resultsEl.innerHTML += `<div class="result pass">  ✓ ${label}</div>`;
+      } else {
+        failed++;
+        resultsEl.innerHTML += `<div class="result fail">  ✗ ${label}</div>`;
+      }
+    }
+
+    function section(name) {
+      resultsEl.innerHTML += `<h2>${name}</h2>`;
+    }
+
+    // ── Seed test data ──────────────────────────────────────────────
+    function seedData() {
+      localStorage.clear();
+      const logs = [
+        {
+          id: 'log1',
+          templateId: 'day1',
+          date: '2026-02-10T18:00:00.000Z',
+          exercises: [
+            {
+              exerciseId: 'squat',
+              sets: [
+                { reps: 8, weight: 225, done: true },
+                { reps: 8, weight: 225, done: true },
+                { reps: 6, weight: 235, done: true }
+              ],
+              note: 'Felt strong'
+            },
+            {
+              exerciseId: 'rdl',
+              sets: [
+                { reps: 10, weight: 185, done: true },
+                { reps: 10, weight: 185, done: true }
+              ],
+              note: ''
+            }
+          ]
+        },
+        {
+          id: 'log2',
+          templateId: 'day2',
+          date: '2026-02-12T19:30:00.000Z',
+          exercises: [
+            {
+              exerciseId: 'ohp',
+              sets: [
+                { reps: 8, weight: 135, done: true },
+                { reps: 7, weight: 135, done: true }
+              ],
+              note: ''
+            },
+            {
+              exerciseId: 'ng_chinup',
+              sets: [
+                { reps: 8, weight: 0, done: true },
+                { reps: 7, weight: 0, done: true },
+                { reps: 6, weight: 0, done: true }
+              ],
+              note: 'Bodyweight only'
+            }
+          ]
+        },
+        {
+          id: 'log3',
+          templateId: 'day1',
+          date: '2026-02-10T20:00:00.000Z',  // Same local day as log1 (two workouts same day)
+          exercises: [
+            {
+              exerciseId: 'squat',
+              sets: [
+                { reps: 5, weight: 245, done: true }
+              ],
+              note: ''
+            }
+          ]
+        },
+        {
+          id: 'log4',
+          templateId: 'day1',
+          date: '2026-01-15T17:00:00.000Z',
+          exercises: [
+            {
+              exerciseId: 'squat',
+              sets: [
+                { reps: 8, weight: 205, done: true },
+                { reps: 8, weight: 205, done: true }
+              ],
+              note: ''
+            }
+          ]
+        },
+        {
+          id: 'log5',
+          templateId: 'day4',
+          date: '2026-02-14T23:00:00.000Z',
+          exercises: [
+            {
+              exerciseId: 'ng_chinup',
+              sets: [
+                { reps: 10, weight: 0, done: true },
+                { reps: 9, weight: 0, done: true }
+              ],
+              note: ''
+            },
+            {
+              exerciseId: 'box_jump',
+              sets: [],
+              note: ''
+            }
+          ]
+        }
+      ];
+      localStorage.setItem('workout_logs', JSON.stringify(logs));
+    }
+
+    // ── Run tests ───────────────────────────────────────────────────
+    seedData();
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Storage: getLogsByMonth');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      const febLogs = Storage.getLogsByMonth(2026, 1); // 0-indexed: Jan=0, Feb=1
+      assert(febLogs.length === 4, `Feb 2026 has 4 logs (got ${febLogs.length})`);
+
+      const janLogs = Storage.getLogsByMonth(2026, 0);
+      assert(janLogs.length === 1, `Jan 2026 has 1 log (got ${janLogs.length})`);
+
+      const marLogs = Storage.getLogsByMonth(2026, 2);
+      assert(marLogs.length === 0, `Mar 2026 has 0 logs (got ${marLogs.length})`);
+
+      const wrongYear = Storage.getLogsByMonth(2025, 1);
+      assert(wrongYear.length === 0, `Feb 2025 has 0 logs (got ${wrongYear.length})`);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Storage: getLogsByDate');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      const feb10 = Storage.getLogsByDate('2026-02-10');
+      assert(feb10.length === 2, `Feb 10 has 2 logs — multiple workouts same day (got ${feb10.length})`);
+
+      const feb12 = Storage.getLogsByDate('2026-02-12');
+      assert(feb12.length === 1, `Feb 12 has 1 log (got ${feb12.length})`);
+
+      const feb13 = Storage.getLogsByDate('2026-02-13');
+      assert(feb13.length === 0, `Feb 13 has 0 logs (got ${feb13.length})`);
+
+      // Timezone edge case: log5 date is 2026-02-14T23:00:00.000Z
+      // In UTC this is Feb 14. In local time it depends on timezone.
+      // The function should match based on LOCAL date.
+      const log5Date = new Date('2026-02-14T23:00:00.000Z');
+      const localDay = log5Date.getDate();
+      const localMonth = String(log5Date.getMonth() + 1).padStart(2, '0');
+      const localYear = log5Date.getFullYear();
+      const localDateStr = `${localYear}-${localMonth}-${String(localDay).padStart(2, '0')}`;
+      const tzLogs = Storage.getLogsByDate(localDateStr);
+      assert(tzLogs.some(l => l.id === 'log5'),
+        `log5 (Feb 14 23:00 UTC) found when searching local date ${localDateStr}`);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Storage: getExerciseHistory');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      const squatHist = Storage.getExerciseHistory('squat');
+      assert(squatHist.length === 3, `Squat has 3 sessions (got ${squatHist.length})`);
+
+      // Should be sorted by date ascending
+      const dates = squatHist.map(h => new Date(h.date).getTime());
+      const isSorted = dates.every((d, i) => i === 0 || d >= dates[i - 1]);
+      assert(isSorted, 'Squat history sorted by date ascending');
+
+      // Check maxWeight computation
+      // log1: sets [225, 225, 235] → maxWeight=235
+      const log1Entry = squatHist.find(h => h.date === '2026-02-10T18:00:00.000Z');
+      assert(log1Entry && log1Entry.maxWeight === 235, `log1 squat maxWeight=235 (got ${log1Entry?.maxWeight})`);
+
+      // Check totalVolume: 8*225 + 8*225 + 6*235 = 1800+1800+1410 = 5010
+      assert(log1Entry && log1Entry.totalVolume === 5010, `log1 squat totalVolume=5010 (got ${log1Entry?.totalVolume})`);
+
+      // Check maxReps
+      assert(log1Entry && log1Entry.maxReps === 8, `log1 squat maxReps=8 (got ${log1Entry?.maxReps})`);
+
+      // Bodyweight exercise: ng_chinup — all weights are 0
+      const chinupHist = Storage.getExerciseHistory('ng_chinup');
+      assert(chinupHist.length === 2, `Chin-ups have 2 sessions (got ${chinupHist.length})`);
+      assert(chinupHist.every(h => h.maxWeight === 0), 'Chin-ups all maxWeight=0 (bodyweight)');
+      assert(chinupHist[1].maxReps === 10, `Chin-up session 2 maxReps=10 (got ${chinupHist[1]?.maxReps})`);
+
+      // Non-existent exercise
+      const noHist = Storage.getExerciseHistory('nonexistent');
+      assert(noHist.length === 0, 'Non-existent exercise returns empty array');
+
+      // Exercise with empty sets should be excluded (box_jump in log5)
+      const boxJumpHist = Storage.getExerciseHistory('box_jump');
+      assert(boxJumpHist.length === 0, 'box_jump with empty sets excluded from history');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Calendar: formatVolume');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      assert(formatVolume(0) === '0', `formatVolume(0) = "0" (got "${formatVolume(0)}")`);
+      assert(formatVolume(500) === '500', `formatVolume(500) = "500" (got "${formatVolume(500)}")`);
+      assert(formatVolume(1000) === '1k', `formatVolume(1000) = "1k" (got "${formatVolume(1000)}")`);
+      assert(formatVolume(1500) === '1.5k', `formatVolume(1500) = "1.5k" (got "${formatVolume(1500)}")`);
+      assert(formatVolume(45200) === '45.2k', `formatVolume(45200) = "45.2k" (got "${formatVolume(45200)}")`);
+      assert(formatVolume(10000) === '10k', `formatVolume(10000) = "10k" (got "${formatVolume(10000)}")`);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Calendar: buildCalendarRows');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      const activeDays = new Set([10, 12, 14]);
+      const today = new Date(2026, 1, 15); // Feb 15 2026
+      const html = buildCalendarRows(2026, 1, activeDays, today);
+
+      // Should have header row
+      assert(html.includes('cal-header'), 'Calendar has header row');
+      assert(html.includes('Sun') && html.includes('Sat'), 'Header has day names');
+
+      // Feb 2026 starts on Sunday (day 0) → first cell should be day 1, not empty
+      assert(html.includes('data-date="2026-02-01"'), 'Feb 1 present');
+      assert(html.includes('data-date="2026-02-28"'), 'Feb 28 present');
+      assert(!html.includes('data-date="2026-02-29"'), 'No Feb 29 (non-leap year)');
+
+      // Active days get dots
+      assert(html.includes('data-date="2026-02-10"') && html.includes('cal-dot'), 'Day 10 has workout dot');
+
+      // Today gets accent class
+      const todayMatch = html.match(/class="[^"]*today[^"]*"[^>]*data-date="2026-02-15"/);
+      assert(todayMatch, 'Feb 15 has today class');
+
+      // Non-active day should NOT have dot
+      const day3Section = html.match(/data-date="2026-02-03"[\s\S]*?<\/div>/);
+      assert(day3Section && !day3Section[0].includes('cal-dot'), 'Day 3 (no workout) has no dot');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Calendar: renderCalendar — DOM integration');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      renderCalendar(2026, 1); // February 2026
+      const app = document.getElementById('app');
+
+      // Summary stats
+      const statValues = app.querySelectorAll('.stat-value');
+      assert(statValues.length === 4, `Has 4 stat values (got ${statValues.length})`);
+      assert(statValues[0].textContent.trim() === '4', `Workouts count = 4 (got "${statValues[0].textContent.trim()}")`);
+
+      // Month label
+      const monthLabel = app.querySelector('.month-nav-label');
+      assert(monthLabel && monthLabel.textContent.includes('February') && monthLabel.textContent.includes('2026'),
+        `Month label shows "February 2026" (got "${monthLabel?.textContent}")`);
+
+      // Calendar days with workouts
+      const activeCells = app.querySelectorAll('.cal-day.active');
+      assert(activeCells.length > 0, 'Some calendar days are marked active');
+
+      // Day click sets correct hash
+      const day10 = app.querySelector('.cal-day[data-date="2026-02-10"]');
+      assert(day10 !== null, 'Day 10 cell exists');
+
+      // Summary toggle collapses
+      const stats = document.getElementById('summary-stats');
+      const toggle = document.getElementById('summary-toggle');
+      toggle.click();
+      assert(stats.style.display === 'none', 'Summary collapses on click');
+      toggle.click();
+      assert(stats.style.display !== 'none', 'Summary expands on second click');
+
+      // Navigation buttons exist
+      assert(document.getElementById('prev-month') !== null, 'Prev month button exists');
+      assert(document.getElementById('next-month') !== null, 'Next month button exists');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Calendar: renderCalendar — empty month');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      renderCalendar(2026, 2); // March 2026 — no data
+      const app = document.getElementById('app');
+      const statValues = app.querySelectorAll('.stat-value');
+      assert(statValues[0].textContent.trim() === '0', 'Empty month shows 0 workouts');
+      assert(app.querySelectorAll('.cal-day.active').length === 0, 'No active days in empty month');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Calendar: renderCalendarDay — with data');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      renderCalendarDay('2026-02-10');
+      const app = document.getElementById('app');
+
+      // Two workouts on this day
+      const exerciseBlocks = app.querySelectorAll('.history-exercise');
+      assert(exerciseBlocks.length >= 2, `Feb 10 has ≥2 exercise blocks (got ${exerciseBlocks.length})`);
+
+      // Exercises are clickable with progress link
+      const clickables = app.querySelectorAll('.clickable-exercise');
+      assert(clickables.length >= 2, `Clickable exercises exist (got ${clickables.length})`);
+      assert(clickables[0].dataset.exerciseId, 'Clickable exercise has data-exercise-id');
+
+      // Progress link emoji present
+      const progressLinks = app.querySelectorAll('.progress-link');
+      assert(progressLinks.length >= 2, `Progress links (📈) present (got ${progressLinks.length})`);
+
+      // Sets are shown
+      assert(app.innerHTML.includes('reps'), 'Set lines show reps');
+
+      // Notes shown
+      assert(app.innerHTML.includes('Felt strong'), 'Exercise notes are displayed');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Calendar: renderCalendarDay — empty day');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      renderCalendarDay('2026-02-13');
+      const app = document.getElementById('app');
+      assert(app.innerHTML.includes('No workouts on this day'), 'Empty day shows message');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Progress: renderProgress — weighted exercise');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      renderProgress('squat');
+      const app = document.getElementById('app');
+
+      // Header
+      assert(app.innerHTML.includes('Back Squat'), 'Shows exercise name');
+      assert(app.innerHTML.includes('Progress'), 'Shows "Progress" subtitle');
+
+      // Summary stats: 3 stat items
+      const statItems = app.querySelectorAll('.progress-summary .stat-item');
+      assert(statItems.length === 3, `3 summary stats (got ${statItems.length})`);
+
+      // Latest weight = 245 (log3 is latest Feb 10 20:00)
+      const latestText = statItems[0].querySelector('.stat-value').textContent.trim();
+      assert(latestText.includes('245'), `Latest = 245 lbs (got "${latestText}")`);
+
+      // Best = 245
+      const bestText = statItems[1].querySelector('.stat-value').textContent.trim();
+      assert(bestText.includes('245'), `Best = 245 lbs (got "${bestText}")`);
+
+      // Sessions = 3
+      const sessionsText = statItems[2].querySelector('.stat-value').textContent.trim();
+      assert(sessionsText === '3', `Sessions = 3 (got "${sessionsText}")`);
+
+      // Shows "lbs" unit
+      assert(latestText.includes('lbs'), 'Uses "lbs" unit for weighted exercise');
+
+      // Chart container exists
+      const chartContainer = document.getElementById('chart-container');
+      assert(chartContainer !== null, 'Chart container exists');
+      const chart = chartContainer.querySelector('.progress-chart');
+      assert(chart !== null, 'Progress chart rendered');
+      assert(chart.querySelector('canvas') !== null, 'Chart has canvas element');
+
+      // Recent sessions listed
+      const sessions = app.querySelectorAll('.progress-session');
+      assert(sessions.length === 3, `3 recent sessions listed (got ${sessions.length})`);
+
+      // Session breakdown format
+      const firstSessionSets = sessions[0].querySelector('.progress-session-sets').textContent;
+      assert(firstSessionSets.includes('×'), 'Set breakdown uses "reps×weight" format');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Progress: renderProgress — bodyweight exercise');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      renderProgress('ng_chinup');
+      const app = document.getElementById('app');
+
+      const statItems = app.querySelectorAll('.progress-summary .stat-item');
+      const latestText = statItems[0].querySelector('.stat-value').textContent.trim();
+      assert(latestText.includes('reps'), 'Bodyweight uses "reps" unit');
+      assert(latestText.includes('10'), `Latest = 10 reps (got "${latestText}")`);
+
+      const bestText = statItems[1].querySelector('.stat-value').textContent.trim();
+      assert(bestText.includes('10'), `Best = 10 reps (got "${bestText}")`);
+
+      // Sessions show "X reps" format (no weight)
+      const sessionSets = app.querySelector('.progress-session-sets').textContent;
+      assert(sessionSets.includes('reps'), 'Bodyweight sessions show "reps" format');
+      assert(!sessionSets.includes('×'), 'Bodyweight sessions do not use × format');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Progress: renderProgress — empty exercise');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      renderProgress('box_jump');
+      const app = document.getElementById('app');
+      assert(app.innerHTML.includes('No data yet'), 'Empty exercise shows no-data message');
+      assert(app.querySelectorAll('.progress-summary').length === 0, 'No summary for empty exercise');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Progress: renderProgress — unknown exercise');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      renderProgress('nonexistent_exercise');
+      const app = document.getElementById('app');
+      assert(app.innerHTML.includes('No data yet'), 'Unknown exercise shows empty state');
+      assert(app.innerHTML.includes('nonexistent_exercise'), 'Falls back to exerciseId as name');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Chart: createProgressChart');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      // Empty data
+      const emptyChart = createProgressChart([], 'lbs');
+      assert(emptyChart.innerHTML.includes('No data to chart'), 'Empty chart shows message');
+
+      // Null data
+      const nullChart = createProgressChart(null, 'lbs');
+      assert(nullChart.innerHTML.includes('No data to chart'), 'Null data shows message');
+
+      // Single data point
+      const singleChart = createProgressChart([{ date: '2026-02-10T18:00:00Z', value: 225 }], 'lbs');
+      assert(singleChart.querySelector('canvas') !== null, 'Single point chart has canvas');
+      assert(singleChart.querySelector('.chart-tooltip') !== null, 'Chart has tooltip element');
+
+      // Multiple data points
+      const multiChart = createProgressChart([
+        { date: '2026-01-15T17:00:00Z', value: 205 },
+        { date: '2026-02-10T18:00:00Z', value: 235 },
+        { date: '2026-02-10T20:00:00Z', value: 245 }
+      ], 'lbs');
+      assert(multiChart.querySelector('canvas') !== null, 'Multi-point chart has canvas');
+
+      // All same values (flat line edge case)
+      const flatChart = createProgressChart([
+        { date: '2026-01-01T00:00:00Z', value: 100 },
+        { date: '2026-02-01T00:00:00Z', value: 100 },
+      ], 'lbs');
+      assert(flatChart.querySelector('canvas') !== null, 'Flat-line chart renders without error');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Routing');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      // Test that route function handles new routes without throwing
+      const origHash = window.location.hash;
+      let threw = false;
+
+      try {
+        window.location.hash = '#calendar';
+        route();
+      } catch (e) { threw = true; }
+      assert(!threw, '#calendar route does not throw');
+
+      threw = false;
+      try {
+        window.location.hash = '#calendar/2026-02-10';
+        route();
+      } catch (e) { threw = true; }
+      assert(!threw, '#calendar/YYYY-MM-DD route does not throw');
+
+      threw = false;
+      try {
+        window.location.hash = '#progress/squat';
+        route();
+      } catch (e) { threw = true; }
+      assert(!threw, '#progress/exerciseId route does not throw');
+
+      window.location.hash = origHash;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Home: calendar button');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      renderHome();
+      const app = document.getElementById('app');
+      const calBtn = document.getElementById('calendar-btn');
+      assert(calBtn !== null, 'Calendar button exists on home page');
+      assert(calBtn.querySelector('svg') !== null, 'Calendar button has SVG icon');
+
+      // Verify all three icon buttons are present
+      const histBtn = document.getElementById('history-btn');
+      const dataBtn = document.getElementById('data-btn');
+      assert(histBtn !== null, 'History button still exists');
+      assert(dataBtn !== null, 'Data button still exists');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('History: clickable exercises in detail');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      renderHistoryDetail('log1');
+      const app = document.getElementById('app');
+      const clickables = app.querySelectorAll('.clickable-exercise');
+      assert(clickables.length >= 2, `History detail has clickable exercises (got ${clickables.length})`);
+
+      const squatLink = app.querySelector('.clickable-exercise[data-exercise-id="squat"]');
+      assert(squatLink !== null, 'Squat exercise is clickable with correct data attribute');
+      assert(squatLink.querySelector('.progress-link') !== null, 'Has 📈 progress indicator');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Calendar grid: edge cases');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      // March 2026 starts on Sunday
+      const marchHtml = buildCalendarRows(2026, 2, new Set(), new Date(2026, 2, 1));
+      assert(marchHtml.includes('data-date="2026-03-01"'), 'March 1 present');
+      assert(marchHtml.includes('data-date="2026-03-31"'), 'March 31 present');
+
+      // April 2026 starts on Wednesday (has leading empty cells)
+      const aprilHtml = buildCalendarRows(2026, 3, new Set(), new Date(2026, 3, 15));
+      assert(aprilHtml.includes('empty'), 'April has empty leading cells');
+      assert(aprilHtml.includes('data-date="2026-04-01"'), 'April 1 present');
+      assert(aprilHtml.includes('data-date="2026-04-30"'), 'April 30 present');
+      assert(!aprilHtml.includes('data-date="2026-04-31"'), 'No April 31');
+
+      // Leap year: Feb 2024
+      const feb2024Html = buildCalendarRows(2024, 1, new Set(), new Date(2024, 1, 15));
+      assert(feb2024Html.includes('data-date="2024-02-29"'), 'Leap year Feb 29 present');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Service worker: new files in cache list');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      // We can't read sw.js directly, but we can verify the scripts loaded
+      assert(typeof createProgressChart === 'function', 'progress-chart.js loaded');
+      assert(typeof renderCalendar === 'function', 'calendar.js loaded');
+      assert(typeof renderCalendarDay === 'function', 'calendar.js renderCalendarDay loaded');
+      assert(typeof renderProgress === 'function', 'progress.js loaded');
+      assert(typeof buildCalendarRows === 'function', 'buildCalendarRows exported');
+      assert(typeof formatVolume === 'function', 'formatVolume exported');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Summary
+    // ═══════════════════════════════════════════════════════════════
+    const summary = document.getElementById('summary');
+    const total = passed + failed;
+    if (failed === 0) {
+      summary.className = 'all-pass';
+      summary.textContent = `All ${total} tests passed ✓`;
+    } else {
+      summary.className = 'has-fail';
+      summary.textContent = `${failed} of ${total} tests failed ✗`;
+    }
+
+    // Show app element again for visual inspection
+    document.getElementById('app').style.display = '';
+
+    // Clean up
+    localStorage.clear();
+  </script>
+</body>
+</html>

@@ -6,6 +6,11 @@ function renderHome() {
       <div class="header-row" style="justify-content:space-between">
         <h1>Workouts</h1>
         <div class="header-icons">
+          <button class="icon-btn" id="calendar-btn" title="Calendar">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </button>
           <button class="icon-btn" id="history-btn" title="History">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
@@ -43,6 +48,10 @@ function renderHome() {
       const templateId = card.dataset.template;
       startWorkout(templateId);
     });
+  });
+
+  document.getElementById('calendar-btn').addEventListener('click', () => {
+    window.location.hash = '#calendar';
   });
 
   document.getElementById('history-btn').addEventListener('click', () => {

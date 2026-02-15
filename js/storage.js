@@ -94,6 +94,44 @@ const Storage = {
     };
   },
 
+  getLogsByMonth(year, month) {
+    return this.getLogs().filter(log => {
+      const d = new Date(log.date);
+      return d.getFullYear() === year && d.getMonth() === month;
+    });
+  },
+
+  getLogsByDate(dateStr) {
+    return this.getLogs().filter(log => {
+      const d = new Date(log.date);
+      const local = d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+      return local === dateStr;
+    });
+  },
+
+  getExerciseHistory(exerciseId) {
+    const logs = this.getLogs().sort((a, b) => new Date(a.date) - new Date(b.date));
+    const results = [];
+    logs.forEach(log => {
+      const ex = log.exercises.find(e => e.exerciseId === exerciseId);
+      if (!ex || ex.sets.length === 0) return;
+      let maxWeight = 0;
+      let totalVolume = 0;
+      let maxReps = 0;
+      ex.sets.forEach(s => {
+        const w = Number(s.weight) || 0;
+        const r = Number(s.reps) || 0;
+        if (w > maxWeight) maxWeight = w;
+        if (r > maxReps) maxReps = r;
+        totalVolume += r * w;
+      });
+      results.push({ date: log.date, sets: ex.sets, maxWeight, totalVolume, maxReps });
+    });
+    return results;
+  },
+
   importData(data, mode) {
     if (mode === 'replace') {
       this._set('workout_logs', data.workout_logs || []);

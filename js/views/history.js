@@ -92,7 +92,9 @@ function renderHistoryDetail(logId) {
 
     html += `
       <div class="history-exercise">
-        <div class="history-exercise-name">${exerciseName}</div>
+        <div class="history-exercise-name clickable-exercise" data-exercise-id="${ex.exerciseId}">
+          ${exerciseName} <span class="progress-link">📈</span>
+        </div>
     `;
 
     ex.sets.forEach((set, i) => {
@@ -112,5 +114,11 @@ function renderHistoryDetail(logId) {
 
   document.getElementById('back-btn').addEventListener('click', () => {
     window.location.hash = '#history';
+  });
+
+  app.querySelectorAll('.clickable-exercise').forEach(el => {
+    el.addEventListener('click', () => {
+      window.location.hash = `#progress/${el.dataset.exerciseId}`;
+    });
   });
 }

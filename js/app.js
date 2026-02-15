@@ -19,6 +19,16 @@ function route() {
         renderHistory();
       }
       break;
+    case 'calendar':
+      if (parts[1]) {
+        renderCalendarDay(parts[1]);
+      } else {
+        renderCalendar();
+      }
+      break;
+    case 'progress':
+      renderProgress(parts[1]);
+      break;
     default:
       renderHome();
   }

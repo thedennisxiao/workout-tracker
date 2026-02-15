@@ -604,3 +604,238 @@ html, body {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* Calendar grid */
+.cal-grid {
+  margin-top: 8px;
+}
+
+.cal-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.cal-row.cal-header {
+  margin-bottom: 8px;
+}
+
+.cal-row.cal-header span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  gap: 3px;
+  color: var(--text-secondary);
+}
+
+.cal-day.empty {
+  cursor: default;
+}
+
+.cal-day.active {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.cal-day.today {
+  border: 2px solid var(--accent);
+}
+
+.cal-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* Month navigation */
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+}
+
+.month-nav-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 20px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.month-nav-btn:active {
+  background: var(--surface);
+}
+
+.month-nav-label {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Monthly summary banner */
+.summary-banner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.summary-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.summary-toggle .chevron {
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 0 16px 14px;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.stat-value small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Progress chart */
+.progress-chart {
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+}
+
+.progress-chart canvas {
+  display: block;
+  width: 100%;
+}
+
+.chart-tooltip {
+  position: absolute;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+
+.chart-section {
+  margin: 16px 0;
+}
+
+/* Progress view */
+.progress-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 8px;
+}
+
+.progress-session {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+}
+
+.progress-session-date {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.progress-session-sets {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: right;
+  flex-shrink: 1;
+  margin-left: 12px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 16px 0 10px;
+  padding-left: 4px;
+}
+
+/* Clickable exercises */
+.clickable-exercise {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.clickable-exercise:active {
+  color: var(--accent);
+}
+
+.progress-link {
+  font-size: 14px;
+  opacity: 0.7;
+}
