@@ -27,7 +27,7 @@ function renderHistory() {
     Object.entries(groups).forEach(([dateLabel, dateLogs]) => {
       html += `<div class="history-date-label">${dateLabel}</div>`;
       dateLogs.forEach(log => {
-        const template = WORKOUT_TEMPLATES.find(t => t.id === log.templateId);
+        const template = getAllTemplates().find(t => t.id === log.templateId);
         const name = template ? template.name : log.templateId;
         const exerciseCount = log.exercises.filter(e => e.sets.length > 0).length;
         const totalSets = log.exercises.reduce((sum, e) => sum + e.sets.length, 0);
@@ -65,7 +65,7 @@ function renderHistoryDetail(logId) {
     return;
   }
 
-  const template = WORKOUT_TEMPLATES.find(t => t.id === log.templateId);
+  const template = getAllTemplates().find(t => t.id === log.templateId);
   const name = template ? template.name : log.templateId;
   const dateStr = new Date(log.date).toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'

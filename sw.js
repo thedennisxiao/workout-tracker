@@ -1,13 +1,16 @@
-const CACHE_NAME = 'workout-tracker-v3';
+const CACHE_NAME = 'workout-tracker-v4';
 const ASSETS = [
   './',
   './index.html',
   './css/styles.css',
   './js/app.js',
   './js/data.js',
+  './js/strength-standards.js',
   './js/storage.js',
   './js/components/set-table.js',
   './js/components/data-modal.js',
+  './js/components/streak.js',
+  './js/components/strength-score.js',
   './js/components/progress-chart.js',
   './js/views/home.js',
   './js/views/workout.js',
@@ -15,6 +18,8 @@ const ASSETS = [
   './js/views/history.js',
   './js/views/calendar.js',
   './js/views/progress.js',
+  './js/views/settings.js',
+  './js/views/template-builder.js',
   './manifest.json',
   './icons/icon-192.png'
 ];

@@ -16,7 +16,8 @@ function createProgressChart(dataPoints, yLabel) {
   const dpr = window.devicePixelRatio || 1;
   const height = 200;
 
-  function draw() {
+  function draw(progress) {
+    if (progress === undefined) progress = 1;
     const width = wrapper.clientWidth || 320;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
@@ -95,14 +96,17 @@ function createProgressChart(dataPoints, yLabel) {
       }
     });
 
+    // Number of points to draw based on progress
+    const drawCount = Math.max(1, Math.ceil(dataPoints.length * progress));
+
     // Fill area
-    if (dataPoints.length > 1) {
+    if (drawCount > 1) {
       ctx.beginPath();
       ctx.moveTo(xPos(0), yPos(values[0]));
-      for (let i = 1; i < dataPoints.length; i++) {
+      for (let i = 1; i < drawCount; i++) {
         ctx.lineTo(xPos(i), yPos(values[i]));
       }
-      ctx.lineTo(xPos(dataPoints.length - 1), pad.top + ch);
+      ctx.lineTo(xPos(drawCount - 1), pad.top + ch);
       ctx.lineTo(xPos(0), pad.top + ch);
       ctx.closePath();
       ctx.fillStyle = 'rgba(139, 92, 246, 0.1)';
@@ -114,26 +118,26 @@ function createProgressChart(dataPoints, yLabel) {
     ctx.strokeStyle = '#8B5CF6';
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
-    if (dataPoints.length === 1) {
+    if (drawCount === 1 && dataPoints.length === 1) {
       // Single dot
-    } else {
+    } else if (drawCount > 1) {
       ctx.moveTo(xPos(0), yPos(values[0]));
-      for (let i = 1; i < dataPoints.length; i++) {
+      for (let i = 1; i < drawCount; i++) {
         ctx.lineTo(xPos(i), yPos(values[i]));
       }
       ctx.stroke();
     }
 
     // Dots
-    dataPoints.forEach((dp, i) => {
+    for (let i = 0; i < drawCount; i++) {
       ctx.beginPath();
-      ctx.arc(xPos(i), yPos(dp.value), 4, 0, Math.PI * 2);
+      ctx.arc(xPos(i), yPos(dataPoints[i].value), 4, 0, Math.PI * 2);
       ctx.fillStyle = '#8B5CF6';
       ctx.fill();
       ctx.strokeStyle = '#0A0A0A';
       ctx.lineWidth = 2;
       ctx.stroke();
-    });
+    }
 
     // Store positions for tap detection
     canvas._dots = dataPoints.map((dp, i) => ({
@@ -170,9 +174,21 @@ function createProgressChart(dataPoints, yLabel) {
     }
   });
 
+  // Animate draw-in
+  function animateDraw() {
+    const startTime = performance.now();
+    const duration = 500;
+    function step(now) {
+      const progress = Math.min((now - startTime) / duration, 1);
+      draw(progress);
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
   // Draw after DOM insertion via requestAnimationFrame
   requestAnimationFrame(() => {
-    draw();
+    animateDraw();
   });
 
   // Redraw on resize

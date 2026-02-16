@@ -166,7 +166,7 @@ function renderCalendarDay(dateStr) {
     html += '<div class="empty-state">No workouts on this day</div>';
   } else {
     logs.forEach(log => {
-      const template = WORKOUT_TEMPLATES.find(t => t.id === log.templateId);
+      const template = getAllTemplates().find(t => t.id === log.templateId);
       const name = template ? template.name : log.templateId;
       html += `<div class="history-date-label">${name}</div>`;
 

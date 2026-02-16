@@ -1,6 +1,26 @@
+function playTimerBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.25, 0.5].forEach(delay => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'square';
+      gain.gain.value = 0.3;
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.15);
+    });
+  } catch (e) {
+    // Web Audio not available
+  }
+}
+
 function renderLogExercise(templateId, exerciseIndex) {
   const app = document.getElementById('app');
-  const template = WORKOUT_TEMPLATES.find(t => t.id === templateId);
+  const allTemplates = getAllTemplates();
+  const template = allTemplates.find(t => t.id === templateId);
   if (!template) { window.location.hash = ''; return; }
 
   const idx = parseInt(exerciseIndex);
@@ -157,6 +177,8 @@ function renderLogExercise(templateId, exerciseIndex) {
     stopTimer();
     timerRemaining = restDuration;
     const totalSeconds = restDuration;
+    // Store for floating timer
+    window._restTimer = { endTime: Date.now() + restDuration * 1000, exerciseName: exercise.name };
     const countdownWrap = document.getElementById('rest-countdown-wrap');
     const countdownEl = document.getElementById('rest-countdown');
     const progressFill = document.getElementById('rest-progress-fill');
@@ -171,7 +193,11 @@ function renderLogExercise(templateId, exerciseIndex) {
 
       if (timerRemaining <= 0) {
         stopTimer();
-        if (navigator.vibrate) navigator.vibrate(200);
+        playTimerBeep();
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        // Clear floating timer
+        if (window._restTimer) window._restTimer = null;
+        removeFloatingTimer();
         // Keep showing 0:00 briefly then hide
         setTimeout(() => {
           const wrap = document.getElementById('rest-countdown-wrap');

@@ -85,12 +85,51 @@ const Storage = {
     this._set('workout_logs', logs);
   },
 
+  getBodyweight() {
+    return this._get('bodyweight') || null;
+  },
+
+  setBodyweight(lbs) {
+    this._set('bodyweight', lbs);
+  },
+
+  getGender() {
+    return this._get('gender') || 'male';
+  },
+
+  setGender(gender) {
+    this._set('gender', gender);
+  },
+
+  getCustomTemplates() {
+    return this._get('custom_templates') || [];
+  },
+
+  saveCustomTemplate(template) {
+    const templates = this.getCustomTemplates();
+    const idx = templates.findIndex(t => t.id === template.id);
+    if (idx >= 0) {
+      templates[idx] = template;
+    } else {
+      templates.push(template);
+    }
+    this._set('custom_templates', templates);
+  },
+
+  deleteCustomTemplate(id) {
+    const templates = this.getCustomTemplates().filter(t => t.id !== id);
+    this._set('custom_templates', templates);
+  },
+
   exportAll() {
     return {
       version: 1,
       exportedAt: new Date().toISOString(),
       workout_logs: this.getLogs(),
-      rest_times: this._get('rest_times') || {}
+      rest_times: this._get('rest_times') || {},
+      bodyweight: this.getBodyweight(),
+      gender: this.getGender(),
+      custom_templates: this.getCustomTemplates()
     };
   },
 
@@ -136,6 +175,9 @@ const Storage = {
     if (mode === 'replace') {
       this._set('workout_logs', data.workout_logs || []);
       if (data.rest_times) this._set('rest_times', data.rest_times);
+      if (data.bodyweight != null) this.setBodyweight(data.bodyweight);
+      if (data.gender) this.setGender(data.gender);
+      if (data.custom_templates) this._set('custom_templates', data.custom_templates);
     } else {
       // merge mode
       const existing = this.getLogs();
@@ -145,6 +187,14 @@ const Storage = {
       if (data.rest_times) {
         const currentRest = this._get('rest_times') || {};
         this._set('rest_times', { ...currentRest, ...data.rest_times });
+      }
+      if (data.bodyweight != null && !this.getBodyweight()) this.setBodyweight(data.bodyweight);
+      if (data.gender && !this._get('gender')) this.setGender(data.gender);
+      if (data.custom_templates) {
+        const existing = this.getCustomTemplates();
+        const existingIds = new Set(existing.map(t => t.id));
+        const newTemplates = data.custom_templates.filter(t => !existingIds.has(t.id));
+        this._set('custom_templates', [...existing, ...newTemplates]);
       }
     }
   }

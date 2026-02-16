@@ -1,6 +1,6 @@
 function renderWorkout(templateId) {
   const app = document.getElementById('app');
-  const template = WORKOUT_TEMPLATES.find(t => t.id === templateId);
+  const template = getAllTemplates().find(t => t.id === templateId);
   if (!template) { window.location.hash = ''; return; }
 
   const session = Storage.getActiveSession();

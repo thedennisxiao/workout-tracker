@@ -839,3 +839,270 @@ html, body {
   font-size: 14px;
   opacity: 0.7;
 }
+
+/* ═══ Phase 4: Strength Score ═══ */
+.strength-card-compact {
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.strength-compact-inner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.strength-score-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.strength-score-circle-lg {
+  width: 64px;
+  height: 64px;
+  border-width: 4px;
+}
+
+.strength-score-number {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.strength-score-number-lg {
+  font-size: 26px;
+}
+
+.strength-compact-text {
+  flex: 1;
+}
+
+.strength-compact-label {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.strength-compact-sublabel {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.strength-compact-arrow {
+  font-size: 20px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.strength-detail {
+  margin-bottom: 16px;
+}
+
+.strength-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.strength-detail-level {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.strength-detail-meta {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.strength-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.strength-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.strength-bar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.strength-bar-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.strength-bar-detail {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.strength-bar-track {
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.strength-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
+}
+
+.strength-bar-exercise {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.strength-detail-empty {
+  margin-bottom: 16px;
+}
+
+/* ═══ Phase 4: Settings ═══ */
+.settings-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.settings-row + .settings-row {
+  border-top: 1px solid var(--border);
+}
+
+.settings-label {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.settings-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 16px;
+  padding: 10px 12px;
+  width: 120px;
+  text-align: center;
+}
+
+.settings-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ═══ Phase 5: Dashboard ═══ */
+.dashboard-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.streak-card, .week-card {
+  text-align: center;
+  cursor: default;
+}
+
+.streak-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.2;
+}
+
+.streak-flame {
+  font-size: 24px;
+  margin-left: 2px;
+}
+
+.recent-card {
+  cursor: pointer;
+}
+
+/* ═══ Phase 7: Template Builder ═══ */
+.template-exercise-card .icon-btn {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+.exercise-search-result {
+  cursor: pointer;
+}
+
+/* ═══ Phase 8: Floating Timer ═══ */
+.floating-timer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.floating-timer-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.floating-timer-time {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+/* ═══ Phase 9: Animations ═══ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#app > * {
+  animation: fadeIn 0.2s ease-out both;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+  animation: slideIn 0.25s ease-out both;
+}
+
+.card:active {
+  transform: scale(0.98);
+}
+
+.summary-stats {
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  overflow: hidden;
+}

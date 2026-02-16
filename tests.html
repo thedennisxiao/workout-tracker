@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Workout Tracker — Phase 3 Tests</title>
+  <title>Workout Tracker — Tests</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, sans-serif; background: #0a0a0a; color: #fff; padding: 20px; max-width: 700px; margin: 0 auto; }
@@ -18,16 +18,19 @@
   </style>
 </head>
 <body>
-  <h1>Phase 3 Tests</h1>
+  <h1>Workout Tracker Tests</h1>
   <div id="app" style="display:none"></div>
   <div id="results"></div>
   <div id="summary"></div>
 
   <!-- Load app scripts in order -->
   <script src="js/data.js"></script>
+  <script src="js/strength-standards.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/components/set-table.js"></script>
   <script src="js/components/data-modal.js"></script>
+  <script src="js/components/streak.js"></script>
+  <script src="js/components/strength-score.js"></script>
   <script src="js/components/progress-chart.js"></script>
   <script src="js/views/home.js"></script>
   <script src="js/views/workout.js"></script>
@@ -35,6 +38,8 @@
   <script src="js/views/history.js"></script>
   <script src="js/views/calendar.js"></script>
   <script src="js/views/progress.js"></script>
+  <script src="js/views/settings.js"></script>
+  <script src="js/views/template-builder.js"></script>
   <script src="js/app.js"></script>
 
   <script>
@@ -110,7 +115,7 @@
         {
           id: 'log3',
           templateId: 'day1',
-          date: '2026-02-10T20:00:00.000Z',  // Same local day as log1 (two workouts same day)
+          date: '2026-02-10T20:00:00.000Z',
           exercises: [
             {
               exerciseId: 'squat',
@@ -167,7 +172,7 @@
     section('Storage: getLogsByMonth');
     // ═══════════════════════════════════════════════════════════════
     {
-      const febLogs = Storage.getLogsByMonth(2026, 1); // 0-indexed: Jan=0, Feb=1
+      const febLogs = Storage.getLogsByMonth(2026, 1);
       assert(febLogs.length === 4, `Feb 2026 has 4 logs (got ${febLogs.length})`);
 
       const janLogs = Storage.getLogsByMonth(2026, 0);
@@ -193,9 +198,6 @@
       const feb13 = Storage.getLogsByDate('2026-02-13');
       assert(feb13.length === 0, `Feb 13 has 0 logs (got ${feb13.length})`);
 
-      // Timezone edge case: log5 date is 2026-02-14T23:00:00.000Z
-      // In UTC this is Feb 14. In local time it depends on timezone.
-      // The function should match based on LOCAL date.
       const log5Date = new Date('2026-02-14T23:00:00.000Z');
       const localDay = log5Date.getDate();
       const localMonth = String(log5Date.getMonth() + 1).padStart(2, '0');
@@ -213,33 +215,23 @@
       const squatHist = Storage.getExerciseHistory('squat');
       assert(squatHist.length === 3, `Squat has 3 sessions (got ${squatHist.length})`);
 
-      // Should be sorted by date ascending
       const dates = squatHist.map(h => new Date(h.date).getTime());
       const isSorted = dates.every((d, i) => i === 0 || d >= dates[i - 1]);
       assert(isSorted, 'Squat history sorted by date ascending');
 
-      // Check maxWeight computation
-      // log1: sets [225, 225, 235] → maxWeight=235
       const log1Entry = squatHist.find(h => h.date === '2026-02-10T18:00:00.000Z');
       assert(log1Entry && log1Entry.maxWeight === 235, `log1 squat maxWeight=235 (got ${log1Entry?.maxWeight})`);
-
-      // Check totalVolume: 8*225 + 8*225 + 6*235 = 1800+1800+1410 = 5010
       assert(log1Entry && log1Entry.totalVolume === 5010, `log1 squat totalVolume=5010 (got ${log1Entry?.totalVolume})`);
-
-      // Check maxReps
       assert(log1Entry && log1Entry.maxReps === 8, `log1 squat maxReps=8 (got ${log1Entry?.maxReps})`);
 
-      // Bodyweight exercise: ng_chinup — all weights are 0
       const chinupHist = Storage.getExerciseHistory('ng_chinup');
       assert(chinupHist.length === 2, `Chin-ups have 2 sessions (got ${chinupHist.length})`);
       assert(chinupHist.every(h => h.maxWeight === 0), 'Chin-ups all maxWeight=0 (bodyweight)');
       assert(chinupHist[1].maxReps === 10, `Chin-up session 2 maxReps=10 (got ${chinupHist[1]?.maxReps})`);
 
-      // Non-existent exercise
       const noHist = Storage.getExerciseHistory('nonexistent');
       assert(noHist.length === 0, 'Non-existent exercise returns empty array');
 
-      // Exercise with empty sets should be excluded (box_jump in log5)
       const boxJumpHist = Storage.getExerciseHistory('box_jump');
       assert(boxJumpHist.length === 0, 'box_jump with empty sets excluded from history');
     }
@@ -261,26 +253,19 @@
     // ═══════════════════════════════════════════════════════════════
     {
       const activeDays = new Set([10, 12, 14]);
-      const today = new Date(2026, 1, 15); // Feb 15 2026
+      const today = new Date(2026, 1, 15);
       const html = buildCalendarRows(2026, 1, activeDays, today);
 
-      // Should have header row
       assert(html.includes('cal-header'), 'Calendar has header row');
       assert(html.includes('Sun') && html.includes('Sat'), 'Header has day names');
-
-      // Feb 2026 starts on Sunday (day 0) → first cell should be day 1, not empty
       assert(html.includes('data-date="2026-02-01"'), 'Feb 1 present');
       assert(html.includes('data-date="2026-02-28"'), 'Feb 28 present');
       assert(!html.includes('data-date="2026-02-29"'), 'No Feb 29 (non-leap year)');
-
-      // Active days get dots
       assert(html.includes('data-date="2026-02-10"') && html.includes('cal-dot'), 'Day 10 has workout dot');
 
-      // Today gets accent class
       const todayMatch = html.match(/class="[^"]*today[^"]*"[^>]*data-date="2026-02-15"/);
       assert(todayMatch, 'Feb 15 has today class');
 
-      // Non-active day should NOT have dot
       const day3Section = html.match(/data-date="2026-02-03"[\s\S]*?<\/div>/);
       assert(day3Section && !day3Section[0].includes('cal-dot'), 'Day 3 (no workout) has no dot');
     }
@@ -289,28 +274,23 @@
     section('Calendar: renderCalendar — DOM integration');
     // ═══════════════════════════════════════════════════════════════
     {
-      renderCalendar(2026, 1); // February 2026
+      renderCalendar(2026, 1);
       const app = document.getElementById('app');
 
-      // Summary stats
       const statValues = app.querySelectorAll('.stat-value');
       assert(statValues.length === 4, `Has 4 stat values (got ${statValues.length})`);
       assert(statValues[0].textContent.trim() === '4', `Workouts count = 4 (got "${statValues[0].textContent.trim()}")`);
 
-      // Month label
       const monthLabel = app.querySelector('.month-nav-label');
       assert(monthLabel && monthLabel.textContent.includes('February') && monthLabel.textContent.includes('2026'),
         `Month label shows "February 2026" (got "${monthLabel?.textContent}")`);
 
-      // Calendar days with workouts
       const activeCells = app.querySelectorAll('.cal-day.active');
       assert(activeCells.length > 0, 'Some calendar days are marked active');
 
-      // Day click sets correct hash
       const day10 = app.querySelector('.cal-day[data-date="2026-02-10"]');
       assert(day10 !== null, 'Day 10 cell exists');
 
-      // Summary toggle collapses
       const stats = document.getElementById('summary-stats');
       const toggle = document.getElementById('summary-toggle');
       toggle.click();
@@ -318,7 +298,6 @@
       toggle.click();
       assert(stats.style.display !== 'none', 'Summary expands on second click');
 
-      // Navigation buttons exist
       assert(document.getElementById('prev-month') !== null, 'Prev month button exists');
       assert(document.getElementById('next-month') !== null, 'Next month button exists');
     }
@@ -327,7 +306,7 @@
     section('Calendar: renderCalendar — empty month');
     // ═══════════════════════════════════════════════════════════════
     {
-      renderCalendar(2026, 2); // March 2026 — no data
+      renderCalendar(2026, 2);
       const app = document.getElementById('app');
       const statValues = app.querySelectorAll('.stat-value');
       assert(statValues[0].textContent.trim() === '0', 'Empty month shows 0 workouts');
@@ -341,23 +320,17 @@
       renderCalendarDay('2026-02-10');
       const app = document.getElementById('app');
 
-      // Two workouts on this day
       const exerciseBlocks = app.querySelectorAll('.history-exercise');
       assert(exerciseBlocks.length >= 2, `Feb 10 has ≥2 exercise blocks (got ${exerciseBlocks.length})`);
 
-      // Exercises are clickable with progress link
       const clickables = app.querySelectorAll('.clickable-exercise');
       assert(clickables.length >= 2, `Clickable exercises exist (got ${clickables.length})`);
       assert(clickables[0].dataset.exerciseId, 'Clickable exercise has data-exercise-id');
 
-      // Progress link emoji present
       const progressLinks = app.querySelectorAll('.progress-link');
-      assert(progressLinks.length >= 2, `Progress links (📈) present (got ${progressLinks.length})`);
+      assert(progressLinks.length >= 2, `Progress links present (got ${progressLinks.length})`);
 
-      // Sets are shown
       assert(app.innerHTML.includes('reps'), 'Set lines show reps');
-
-      // Notes shown
       assert(app.innerHTML.includes('Felt strong'), 'Exercise notes are displayed');
     }
 
@@ -377,41 +350,32 @@
       renderProgress('squat');
       const app = document.getElementById('app');
 
-      // Header
       assert(app.innerHTML.includes('Back Squat'), 'Shows exercise name');
       assert(app.innerHTML.includes('Progress'), 'Shows "Progress" subtitle');
 
-      // Summary stats: 3 stat items
       const statItems = app.querySelectorAll('.progress-summary .stat-item');
       assert(statItems.length === 3, `3 summary stats (got ${statItems.length})`);
 
-      // Latest weight = 245 (log3 is latest Feb 10 20:00)
       const latestText = statItems[0].querySelector('.stat-value').textContent.trim();
       assert(latestText.includes('245'), `Latest = 245 lbs (got "${latestText}")`);
 
-      // Best = 245
       const bestText = statItems[1].querySelector('.stat-value').textContent.trim();
       assert(bestText.includes('245'), `Best = 245 lbs (got "${bestText}")`);
 
-      // Sessions = 3
       const sessionsText = statItems[2].querySelector('.stat-value').textContent.trim();
       assert(sessionsText === '3', `Sessions = 3 (got "${sessionsText}")`);
 
-      // Shows "lbs" unit
       assert(latestText.includes('lbs'), 'Uses "lbs" unit for weighted exercise');
 
-      // Chart container exists
       const chartContainer = document.getElementById('chart-container');
       assert(chartContainer !== null, 'Chart container exists');
       const chart = chartContainer.querySelector('.progress-chart');
       assert(chart !== null, 'Progress chart rendered');
       assert(chart.querySelector('canvas') !== null, 'Chart has canvas element');
 
-      // Recent sessions listed
       const sessions = app.querySelectorAll('.progress-session');
       assert(sessions.length === 3, `3 recent sessions listed (got ${sessions.length})`);
 
-      // Session breakdown format
       const firstSessionSets = sessions[0].querySelector('.progress-session-sets').textContent;
       assert(firstSessionSets.includes('×'), 'Set breakdown uses "reps×weight" format');
     }
@@ -431,7 +395,6 @@
       const bestText = statItems[1].querySelector('.stat-value').textContent.trim();
       assert(bestText.includes('10'), `Best = 10 reps (got "${bestText}")`);
 
-      // Sessions show "X reps" format (no weight)
       const sessionSets = app.querySelector('.progress-session-sets').textContent;
       assert(sessionSets.includes('reps'), 'Bodyweight sessions show "reps" format');
       assert(!sessionSets.includes('×'), 'Bodyweight sessions do not use × format');
@@ -461,20 +424,16 @@
     section('Chart: createProgressChart');
     // ═══════════════════════════════════════════════════════════════
     {
-      // Empty data
       const emptyChart = createProgressChart([], 'lbs');
       assert(emptyChart.innerHTML.includes('No data to chart'), 'Empty chart shows message');
 
-      // Null data
       const nullChart = createProgressChart(null, 'lbs');
       assert(nullChart.innerHTML.includes('No data to chart'), 'Null data shows message');
 
-      // Single data point
       const singleChart = createProgressChart([{ date: '2026-02-10T18:00:00Z', value: 225 }], 'lbs');
       assert(singleChart.querySelector('canvas') !== null, 'Single point chart has canvas');
       assert(singleChart.querySelector('.chart-tooltip') !== null, 'Chart has tooltip element');
 
-      // Multiple data points
       const multiChart = createProgressChart([
         { date: '2026-01-15T17:00:00Z', value: 205 },
         { date: '2026-02-10T18:00:00Z', value: 235 },
@@ -482,7 +441,6 @@
       ], 'lbs');
       assert(multiChart.querySelector('canvas') !== null, 'Multi-point chart has canvas');
 
-      // All same values (flat line edge case)
       const flatChart = createProgressChart([
         { date: '2026-01-01T00:00:00Z', value: 100 },
         { date: '2026-02-01T00:00:00Z', value: 100 },
@@ -494,7 +452,6 @@
     section('Routing');
     // ═══════════════════════════════════════════════════════════════
     {
-      // Test that route function handles new routes without throwing
       const origHash = window.location.hash;
       let threw = false;
 
@@ -531,11 +488,10 @@
       assert(calBtn !== null, 'Calendar button exists on home page');
       assert(calBtn.querySelector('svg') !== null, 'Calendar button has SVG icon');
 
-      // Verify all three icon buttons are present
       const histBtn = document.getElementById('history-btn');
       const dataBtn = document.getElementById('data-btn');
       assert(histBtn !== null, 'History button still exists');
-      assert(dataBtn !== null, 'Data button still exists');
+      assert(dataBtn !== null, 'Data/settings button still exists');
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -549,41 +505,391 @@
 
       const squatLink = app.querySelector('.clickable-exercise[data-exercise-id="squat"]');
       assert(squatLink !== null, 'Squat exercise is clickable with correct data attribute');
-      assert(squatLink.querySelector('.progress-link') !== null, 'Has 📈 progress indicator');
+      assert(squatLink.querySelector('.progress-link') !== null, 'Has progress indicator');
     }
 
     // ═══════════════════════════════════════════════════════════════
     section('Calendar grid: edge cases');
     // ═══════════════════════════════════════════════════════════════
     {
-      // March 2026 starts on Sunday
       const marchHtml = buildCalendarRows(2026, 2, new Set(), new Date(2026, 2, 1));
       assert(marchHtml.includes('data-date="2026-03-01"'), 'March 1 present');
       assert(marchHtml.includes('data-date="2026-03-31"'), 'March 31 present');
 
-      // April 2026 starts on Wednesday (has leading empty cells)
       const aprilHtml = buildCalendarRows(2026, 3, new Set(), new Date(2026, 3, 15));
       assert(aprilHtml.includes('empty'), 'April has empty leading cells');
       assert(aprilHtml.includes('data-date="2026-04-01"'), 'April 1 present');
       assert(aprilHtml.includes('data-date="2026-04-30"'), 'April 30 present');
       assert(!aprilHtml.includes('data-date="2026-04-31"'), 'No April 31');
 
-      // Leap year: Feb 2024
       const feb2024Html = buildCalendarRows(2024, 1, new Set(), new Date(2024, 1, 15));
       assert(feb2024Html.includes('data-date="2024-02-29"'), 'Leap year Feb 29 present');
     }
 
     // ═══════════════════════════════════════════════════════════════
-    section('Service worker: new files in cache list');
+    section('Service worker: new files loaded');
     // ═══════════════════════════════════════════════════════════════
     {
-      // We can't read sw.js directly, but we can verify the scripts loaded
       assert(typeof createProgressChart === 'function', 'progress-chart.js loaded');
       assert(typeof renderCalendar === 'function', 'calendar.js loaded');
       assert(typeof renderCalendarDay === 'function', 'calendar.js renderCalendarDay loaded');
       assert(typeof renderProgress === 'function', 'progress.js loaded');
       assert(typeof buildCalendarRows === 'function', 'buildCalendarRows exported');
       assert(typeof formatVolume === 'function', 'formatVolume exported');
+      assert(typeof computeStrengthScore === 'function', 'strength-score.js loaded');
+      assert(typeof createStrengthScoreCard === 'function', 'createStrengthScoreCard loaded');
+      assert(typeof computeStreaks === 'function', 'streak.js loaded');
+      assert(typeof renderSettings === 'function', 'settings.js loaded');
+      assert(typeof renderTemplateBuilder === 'function', 'template-builder.js loaded');
+      assert(typeof playTimerBeep === 'function', 'playTimerBeep loaded');
+      assert(typeof getAllTemplates === 'function', 'getAllTemplates loaded');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 4 Tests: Storage — bodyweight/gender
+    // ═══════════════════════════════════════════════════════════════
+    section('Phase 4: Storage — bodyweight/gender');
+    {
+      localStorage.clear();
+      assert(Storage.getBodyweight() === null, 'Default bodyweight is null');
+      assert(Storage.getGender() === 'male', 'Default gender is male');
+
+      Storage.setBodyweight(185);
+      assert(Storage.getBodyweight() === 185, 'setBodyweight(185) persists');
+
+      Storage.setGender('female');
+      assert(Storage.getGender() === 'female', 'setGender(female) persists');
+
+      // Export includes bodyweight/gender
+      const exported = Storage.exportAll();
+      assert(exported.bodyweight === 185, 'exportAll includes bodyweight');
+      assert(exported.gender === 'female', 'exportAll includes gender');
+
+      // Import preserves them
+      localStorage.clear();
+      Storage.importData(exported, 'replace');
+      assert(Storage.getBodyweight() === 185, 'importData replace preserves bodyweight');
+      assert(Storage.getGender() === 'female', 'importData replace preserves gender');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Phase 4: Wathan formula');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      // 1RM of a 1-rep max should be the weight itself
+      const oneRep = wathanEstimate1RM(225, 1);
+      assert(oneRep === 225, `1RM of 225x1 = 225 (got ${oneRep})`);
+
+      // 0 reps = 0
+      assert(wathanEstimate1RM(225, 0) === 0, 'wathanEstimate1RM(225, 0) = 0');
+
+      // Known approximate: 225 x 5 ≈ 253 (Wathan)
+      const fiveRep = Math.round(wathanEstimate1RM(225, 5));
+      assert(fiveRep >= 248 && fiveRep <= 258, `225x5 ≈ 253 (got ${fiveRep})`);
+
+      // 8 reps should give higher 1RM estimate
+      const eightRep = wathanEstimate1RM(225, 8);
+      assert(eightRep > wathanEstimate1RM(225, 5), '8-rep estimate > 5-rep for same weight');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Phase 4: Strength score computation');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      // No bodyweight = no data
+      localStorage.clear();
+      const noData = computeStrengthScore();
+      assert(noData.hasData === false, 'No bodyweight → hasData=false');
+      assert(noData.overallScore === 0, 'No bodyweight → score=0');
+
+      // With bodyweight + seeded logs
+      seedData();
+      Storage.setBodyweight(180);
+      Storage.setGender('male');
+
+      const score = computeStrengthScore();
+      assert(score.hasData === true, 'With workout data → hasData=true');
+      assert(score.bodyweight === 180, 'bodyweight=180');
+      assert(score.categories.length === 5, '5 strength categories');
+      assert(score.overallScore > 0, `overallScore > 0 (got ${score.overallScore})`);
+      assert(score.overallScore <= 100, `overallScore <= 100 (got ${score.overallScore})`);
+
+      // Squat category should have data
+      const squatCat = score.categories.find(c => c.id === 'squat');
+      assert(squatCat.estimated1RM > 0, `Squat 1RM > 0 (got ${squatCat.estimated1RM})`);
+      assert(squatCat.bwRatio > 0, `Squat BW ratio > 0 (got ${squatCat.bwRatio})`);
+      assert(STRENGTH_LEVELS.includes(squatCat.level), `Squat level is valid (got ${squatCat.level})`);
+
+      // Pullup category — bodyweight exercise
+      const pullupCat = score.categories.find(c => c.id === 'pullup');
+      assert(pullupCat.estimated1RM > 0, `Pullup 1RM > 0 (got ${pullupCat.estimated1RM})`);
+
+      // Female thresholds should produce different level for same data
+      Storage.setGender('female');
+      const femaleScore = computeStrengthScore();
+      Storage.setGender('male');
+      // Female thresholds are lower, so score should be higher or equal
+      assert(femaleScore.overallScore >= score.overallScore, 'Female thresholds → higher or equal score');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Phase 4: Settings DOM');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      seedData();
+      Storage.setBodyweight(180);
+      Storage.setGender('male');
+
+      renderSettings();
+      const app = document.getElementById('app');
+
+      assert(document.getElementById('bodyweight-input') !== null, 'Bodyweight input exists');
+      assert(document.getElementById('gender-male') !== null, 'Gender male toggle exists');
+      assert(document.getElementById('gender-female') !== null, 'Gender female toggle exists');
+      assert(document.getElementById('export-btn') !== null, 'Export button exists');
+      assert(document.getElementById('import-file') !== null, 'Import file input exists');
+
+      // Strength score detail should be rendered
+      const strengthContainer = document.getElementById('strength-detail-container');
+      assert(strengthContainer !== null, 'Strength detail container exists');
+      assert(strengthContainer.querySelector('.strength-detail') !== null, 'Strength detail card rendered');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    section('Phase 4: Settings route');
+    // ═══════════════════════════════════════════════════════════════
+    {
+      const origHash = window.location.hash;
+      let threw = false;
+      try {
+        window.location.hash = '#settings';
+        route();
+      } catch (e) { threw = true; }
+      assert(!threw, '#settings route does not throw');
+      window.location.hash = origHash;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 6 Tests: Streaks
+    // ═══════════════════════════════════════════════════════════════
+    section('Phase 6: Streaks — empty logs');
+    {
+      localStorage.clear();
+      const empty = computeStreaks();
+      assert(empty.currentStreak === 0, 'Empty → currentStreak=0');
+      assert(empty.longestStreak === 0, 'Empty → longestStreak=0');
+      assert(empty.thisWeekCount === 0, 'Empty → thisWeekCount=0');
+    }
+
+    section('Phase 6: Streaks — with data');
+    {
+      // Create logs across multiple weeks
+      localStorage.clear();
+      const now = new Date();
+      const thisMonday = new Date(now);
+      const day = thisMonday.getDay();
+      const diff = day === 0 ? 6 : day - 1;
+      thisMonday.setDate(thisMonday.getDate() - diff);
+      thisMonday.setHours(12, 0, 0, 0);
+
+      const logs = [
+        // This week — 2 workouts
+        { id: 'streak1', templateId: 'day1', date: thisMonday.toISOString(), exercises: [{ exerciseId: 'squat', sets: [{ reps: 5, weight: 225 }] }] },
+        { id: 'streak2', templateId: 'day2', date: new Date(thisMonday.getTime() + 2 * 86400000).toISOString(), exercises: [{ exerciseId: 'ohp', sets: [{ reps: 5, weight: 135 }] }] },
+        // Last week
+        { id: 'streak3', templateId: 'day1', date: new Date(thisMonday.getTime() - 5 * 86400000).toISOString(), exercises: [{ exerciseId: 'squat', sets: [{ reps: 5, weight: 225 }] }] },
+        // 2 weeks ago
+        { id: 'streak4', templateId: 'day3', date: new Date(thisMonday.getTime() - 10 * 86400000).toISOString(), exercises: [{ exerciseId: 'rdl', sets: [{ reps: 5, weight: 185 }] }] },
+      ];
+      localStorage.setItem('workout_logs', JSON.stringify(logs));
+
+      const streaks = computeStreaks();
+      assert(streaks.currentStreak === 3, `3 consecutive weeks → currentStreak=3 (got ${streaks.currentStreak})`);
+      assert(streaks.longestStreak === 3, `longestStreak=3 (got ${streaks.longestStreak})`);
+      assert(streaks.thisWeekCount === 2, `thisWeekCount=2 (got ${streaks.thisWeekCount})`);
+    }
+
+    section('Phase 6: Streaks — gap breaks streak');
+    {
+      localStorage.clear();
+      const now = new Date();
+      const thisMonday = new Date(now);
+      const day = thisMonday.getDay();
+      const mondayDiff = day === 0 ? 6 : day - 1;
+      thisMonday.setDate(thisMonday.getDate() - mondayDiff);
+      thisMonday.setHours(12, 0, 0, 0);
+
+      const logs = [
+        // This week
+        { id: 'g1', templateId: 'day1', date: thisMonday.toISOString(), exercises: [{ exerciseId: 'squat', sets: [{ reps: 5, weight: 225 }] }] },
+        // Skip last week — gap!
+        // 2 weeks ago
+        { id: 'g2', templateId: 'day1', date: new Date(thisMonday.getTime() - 14 * 86400000).toISOString(), exercises: [{ exerciseId: 'squat', sets: [{ reps: 5, weight: 225 }] }] },
+        // 3 weeks ago
+        { id: 'g3', templateId: 'day1', date: new Date(thisMonday.getTime() - 21 * 86400000).toISOString(), exercises: [{ exerciseId: 'squat', sets: [{ reps: 5, weight: 225 }] }] },
+      ];
+      localStorage.setItem('workout_logs', JSON.stringify(logs));
+
+      const streaks = computeStreaks();
+      assert(streaks.currentStreak === 1, `Gap breaks streak → currentStreak=1 (got ${streaks.currentStreak})`);
+      assert(streaks.longestStreak === 2, `longestStreak=2 from 2+3 weeks ago (got ${streaks.longestStreak})`);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 5 Tests: Dashboard Home
+    // ═══════════════════════════════════════════════════════════════
+    section('Phase 5: Dashboard Home');
+    {
+      seedData();
+      Storage.setBodyweight(180);
+      Storage.setGender('male');
+
+      renderHome();
+      const app = document.getElementById('app');
+
+      // Strength card shown (bodyweight is set, has workout data)
+      const strengthContainer = document.getElementById('strength-card-container');
+      assert(strengthContainer !== null, 'Strength card container present when bodyweight set');
+      assert(strengthContainer.querySelector('.strength-card-compact') !== null, 'Compact strength card rendered');
+
+      // Streak values
+      const streakValues = app.querySelectorAll('.streak-value');
+      assert(streakValues.length >= 2, `Streak and week values displayed (got ${streakValues.length})`);
+
+      // Recent activity
+      const recentCards = app.querySelectorAll('.recent-card');
+      assert(recentCards.length > 0, `Recent activity cards shown (got ${recentCards.length})`);
+      assert(recentCards.length <= 3, 'At most 3 recent cards');
+
+      // Template cards still present
+      const templateCards = app.querySelectorAll('.card[data-template]');
+      assert(templateCards.length >= 4, `Template cards present (got ${templateCards.length})`);
+
+      // All header icons
+      assert(document.getElementById('calendar-btn') !== null, 'Calendar button');
+      assert(document.getElementById('history-btn') !== null, 'History button');
+      assert(document.getElementById('data-btn') !== null, 'Settings button');
+
+      // Create Workout button
+      assert(document.getElementById('create-template-btn') !== null, 'Create Workout button exists');
+    }
+
+    section('Phase 5: Dashboard — no bodyweight hides strength card');
+    {
+      seedData();
+      // Don't set bodyweight
+      renderHome();
+      const app = document.getElementById('app');
+      const strengthContainer = document.getElementById('strength-card-container');
+      assert(strengthContainer === null, 'Strength card hidden when no bodyweight');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 7 Tests: Custom Templates
+    // ═══════════════════════════════════════════════════════════════
+    section('Phase 7: Custom template CRUD');
+    {
+      localStorage.clear();
+      assert(Storage.getCustomTemplates().length === 0, 'Initially no custom templates');
+
+      const tmpl = {
+        id: 'custom_test1',
+        name: 'Test Template',
+        exercises: [{ exerciseId: 'squat', sets: 3, reps: '8-12', rpe: null, group: 'A' }]
+      };
+      Storage.saveCustomTemplate(tmpl);
+      assert(Storage.getCustomTemplates().length === 1, 'saveCustomTemplate adds template');
+      assert(Storage.getCustomTemplates()[0].name === 'Test Template', 'Template name correct');
+
+      // Update
+      tmpl.name = 'Updated Template';
+      Storage.saveCustomTemplate(tmpl);
+      assert(Storage.getCustomTemplates().length === 1, 'saveCustomTemplate updates existing');
+      assert(Storage.getCustomTemplates()[0].name === 'Updated Template', 'Template name updated');
+
+      // Delete
+      Storage.deleteCustomTemplate('custom_test1');
+      assert(Storage.getCustomTemplates().length === 0, 'deleteCustomTemplate removes template');
+    }
+
+    section('Phase 7: getAllTemplates merges');
+    {
+      localStorage.clear();
+      Storage.saveCustomTemplate({ id: 'custom_x', name: 'Custom X', exercises: [] });
+      const all = getAllTemplates();
+      assert(all.length === WORKOUT_TEMPLATES.length + 1, `getAllTemplates = built-in + custom (got ${all.length})`);
+      assert(all.some(t => t.id === 'custom_x'), 'Custom template in getAllTemplates');
+      assert(all.some(t => t.id === 'day1'), 'Built-in template in getAllTemplates');
+    }
+
+    section('Phase 7: Export includes custom templates');
+    {
+      localStorage.clear();
+      Storage.saveCustomTemplate({ id: 'custom_exp', name: 'Export Test', exercises: [] });
+      const exported = Storage.exportAll();
+      assert(Array.isArray(exported.custom_templates), 'exportAll includes custom_templates');
+      assert(exported.custom_templates.length === 1, 'exported custom_templates has 1 entry');
+
+      // Import
+      localStorage.clear();
+      Storage.importData(exported, 'replace');
+      assert(Storage.getCustomTemplates().length === 1, 'importData replace restores custom templates');
+      assert(Storage.getCustomTemplates()[0].id === 'custom_exp', 'Imported template id correct');
+    }
+
+    section('Phase 7: Template builder DOM');
+    {
+      localStorage.clear();
+      let threw = false;
+      try {
+        renderTemplateBuilder();
+      } catch (e) { threw = true; }
+      assert(!threw, 'renderTemplateBuilder() does not throw');
+
+      const app = document.getElementById('app');
+      assert(document.getElementById('template-name') !== null, 'Template name input exists');
+      assert(document.getElementById('exercise-search') !== null, 'Exercise search input exists');
+      assert(document.getElementById('save-template-btn') !== null, 'Save button exists');
+    }
+
+    section('Phase 7: Template route');
+    {
+      const origHash = window.location.hash;
+      let threw = false;
+      try {
+        window.location.hash = '#template/new';
+        route();
+      } catch (e) { threw = true; }
+      assert(!threw, '#template/new route does not throw');
+      window.location.hash = origHash;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Phase 8 Tests: Rest Timer
+    // ═══════════════════════════════════════════════════════════════
+    section('Phase 8: playTimerBeep');
+    {
+      let threw = false;
+      try { playTimerBeep(); } catch (e) { threw = true; }
+      assert(!threw, 'playTimerBeep does not throw');
+    }
+
+    section('Phase 8: Floating timer');
+    {
+      // Set up a fake rest timer
+      window._restTimer = { endTime: Date.now() + 60000, exerciseName: 'Back Squat' };
+      renderHome();
+      showFloatingTimer();
+      const banner = document.getElementById('floating-timer');
+      assert(banner !== null, 'Floating timer banner appears when _restTimer active');
+      assert(banner.textContent.includes('Back Squat'), 'Banner shows exercise name');
+
+      // Clean up
+      window._restTimer = null;
+      removeFloatingTimer();
+      if (window._floatingTimerInterval) clearInterval(window._floatingTimerInterval);
+      const removed = document.getElementById('floating-timer');
+      assert(removed === null, 'Banner removed when timer cleared');
     }
 
     // ═══════════════════════════════════════════════════════════════
